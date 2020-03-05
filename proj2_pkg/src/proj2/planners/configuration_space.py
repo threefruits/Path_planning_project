@@ -6,6 +6,7 @@ Author: Amay Saxena
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 from scipy.integrate import odeint
 from contextlib import contextmanager
 
@@ -246,7 +247,7 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         We assume that the robot is circular and has radius equal to robot_radius
         The state of the robot is defined as (x, y, theta, phi).
     """
-    def __init__(self, low_lims, high_lims, input_low_lims, input_high_lims, obstacles, robot_radius):
+    def __init__(self, low_lims, high_lims, input_low_lims, input_high_lims, obstacles, goal, robot_radius):
         dim = 4
         super(BicycleConfigurationSpace, self).__init__(dim, low_lims, high_lims, obstacles)
         self.robot_radius = robot_radius
@@ -258,7 +259,8 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         """
         c1 and c2 should be numpy.ndarrays of size (4,)
         """
-        distance = sqrt((c1[0]-c2[0])^2+(c1[1]-c2[1])^2+(c1[2]-c2[2])^2)
+        theta_d= math.pi - abs((c1[2]-c2[2])%(2*math.pi)-math.pi)
+        distance = math.sqrt((c1[0]-c2[0])^2+(c1[1]-c2[1])^2+theta_d^2)
         return distance
 
     def sample_config(self, *args):
@@ -270,6 +272,9 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         RRT implementation passes in the goal as an additional argument,
         which can be used to implement a goal-biasing heuristic.
         """
+        p = np.random.rand()
+        if p>0.8
+
         pass
 
     def check_collision(self, c):

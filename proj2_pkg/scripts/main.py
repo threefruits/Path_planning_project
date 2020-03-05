@@ -82,6 +82,7 @@ if __name__ == '__main__':
                                         [-u1_max, -u2_max],
                                         [u1_max, u2_max],
                                         obstacles,
+                                        goal,
                                         0.15)
 
     if args.planner == 'sin':
