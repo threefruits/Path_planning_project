@@ -4,8 +4,11 @@ Starter code for EE106B Turtlebot Lab
 Author: Valmik Prabhu, Chris Correa
 Adapted for Spring 2020 by Amay Saxena
 """
+from math import *
 import numpy as np
-from scipy.integrate import quad
+import rospy
+from scipy.integrate import quad,quadrature,ode,odeint
+from scipy import optimize
 import sys
 from copy import copy
 import matplotlib.pyplot as plt
@@ -83,13 +86,13 @@ class SinusoidPlanner():
                             delta_t=delta_t
                         )
         alpha_path =    self.steer_alpha(
-                            phi_path.end_position(),
+                            phi_path.end_position(), 
                             goal_state, 
                             dt=dt, 
                             delta_t=delta_t
                         )
         y_path =        self.steer_y(
-                            alpha_path.end_position(),
+                            alpha_path.end_position(), 
                             goal_state,
                             dt=dt,
                             delta_t=delta_t
@@ -173,31 +176,19 @@ class SinusoidPlanner():
         :obj: Plan
             See configuration_space.Plan.
         """
-        # pass
-        # added by Jonathan Tong
         start_state_v = self.state2v(start_state)
         goal_state_v = self.state2v(goal_state)
-        delta_phi = goal_state_v[3] - start_state_v[3]
-        delta_alpha = goal_state_v[2] - start_state_v[2]
+        delta_phi = goal_state_v[1] - start_state_v[1]
 
-        omega = 2*np.pi / delta_t
-
-        a2 = min(1, self.phi_dist*omega)
-        f = lambda phi: (1/self.l)*np.tan(phi) # This is from the car model
-        phi_fn = lambda t: (a2/omega)*np.sin(omega*t) + start_state_v[1]
-        integrand = lambda t: f(phi_fn(t))*np.sin(omega*t) # The integrand to find beta
-        beta1 = (omega/np.pi) * quad(integrand, 0, delta_t)[0]
-
-        a1 = (delta_alpha * omega)/(np.pi*beta1)
-              
-        v1 = lambda t: a1*np.sin(omega*(t))
-        v2 = lambda t: a2*np.cos(omega*(t))
+        v1 = 0
+        v2 = delta_phi/delta_t
 
         path, t = [], t0
         while t < t0 + delta_t:
-            path.append([t, v1(t-t0), v2(t-t0)])
+            path.append([t, v1, v2])
             t = t + dt
         return self.v_path_to_u_path(path, start_state, dt)
+        
 
     def steer_alpha(self, start_state, goal_state, t0 = 0, dt = 0.01, delta_t = 2):
         """
@@ -273,20 +264,83 @@ class SinusoidPlanner():
         :obj: Plan
             See configuration_space.Plan.
         """
-        # pass
-        # added by Jonathan Tong
+        
         start_state_v = self.state2v(start_state)
         goal_state_v = self.state2v(goal_state)
-        delta_y = goal_state_v[1] - start_state_v[1]
+        delta_y = goal_state_v[3] - start_state_v[3]
 
-        v1 = 0
-        v2 = delta_y / delta_t
+        omega = 2 * np.pi / delta_t
 
-        path, t = [], t0
-        while t < t0 + delta_t:
-            path.append([t, v1, v2])
-            t = t + dt
-        return self.v_path_to_u_path(path, start_state, dt)
+        max_a1 = self.max_u1 
+        max_a2 = self.max_u2 
+
+        def gross_func_ode(x):
+            # try to use ode to handle the itegration
+            # v1 = a1 sin wt
+            # v2 = a2 cos(2wt)
+            (a1,a2) = x
+            def my_ode(z,t):
+                #ode in original form
+                (x,y,theta,phi) = z
+                inf_result = [np.inf,np.inf,np.inf,np.inf]
+                if x == np.inf:
+                    return inf_result
+                if cos(theta) == 0 :
+                    return inf_result
+                u1 = a1 * sin(omega * t) / cos(theta)
+                u2 = a2 * cos(2 * omega * t) 
+                flag = self.check_limit(u1,u2,phi)
+                result = [np.cos(theta)*u1, np.sin(theta)*u1, 1/self.l*tan(phi)*u1, u2]
+                return result if flag else inf_result
+            z0 = self.state2u(start_state)
+            t = np.array([0,delta_t])
+            sol = odeint(my_ode,z0,t,printmessg=False)
+            y = sol[-1][1] # the final state of y
+            return [y - goal_state_v[3],0]
+
+        def find_root(func1):
+            # try to find the root of equation func = 0
+            init_guess = np.array([delta_y*2, delta_y*2])
+            while not rospy.is_shutdown():
+                sol = optimize.root(func1,init_guess,method='hybr')
+                if (sol.success):
+                    break
+                else:
+                    init_guess[0] = max_a1 * np.random.rand()
+                    init_guess[1] = max_a2 * np.random.rand()
+                    print("Find root failed, because %s "%(sol.message))
+                    print("change initial guess to (%f,%f) and try again..."%(init_guess[0],init_guess[1]))
+            return sol.x
+
+
+        # generate the path              
+        while not rospy.is_shutdown():
+            (a1,a2) = find_root(gross_func_ode)
+            print("In steer_y a1=%f a2=%f delta_y=%f"%(a1,a2,delta_y))
+            v1 = lambda t: a1*np.sin(omega*(t))
+            v2 = lambda t: a2*np.cos(2*omega*(t))
+
+            path, t = [], t0
+            while t < t0 + delta_t:
+                path.append([t, v1(t-t0), v2(t-t0)])
+                t = t + dt
+
+            u_path = self.v_path_to_u_path(path, start_state, dt)
+            if not self.limit_flag:
+                break
+            else:
+                print("Generated y path reached the limit, reduce the max a1 %f a2 %f and try again..."%(max_a1,max_a2))
+                mul = 0.99
+                max_a1 = max_a1 * mul
+                max_a2 = max_a2 * mul
+        return u_path
+        
+    def state2u(self,state):
+        return np.array([state[0], state[1], state[2], state[3]])
+
+
+    def check_limit(self,u1,u2,phi):
+        return abs(u1) <= self.max_u1 and abs(u2) <= self.max_u2 and abs(phi) <= self.max_phi
 
     def state2v(self, state):
         """
@@ -323,9 +377,20 @@ class SinusoidPlanner():
         :obj: Plan
             See configuration_space.Plan.
         """
+        self.limit_flag = False
         def v2cmd(v1, v2, state):
             u1 = v1/np.cos(state[2])
             u2 = v2
+            if abs(u1) > self.max_u1:
+                print("The limit is reached. u1 %f max %f"%(u1,self.max_u1))
+                self.limit_flag = True
+            if abs(u2) > self.max_u2:
+                print("The limit is reached. u2 %f max %f"%(u2,self.max_u2))
+                self.limit_flag = True
+            phi = state[3]
+            if abs(phi) > self.max_phi:
+                print("The limit is reached. phi %f max %f"%(phi,self.max_phi))
+                self.limit_flag = True
             return [u1, u2]
 
         curr_state = start_state
@@ -353,8 +418,7 @@ def main():
     """Use this function if you'd like to test without ROS.
     """
     start = np.array([1, 1, 0, 0]) 
-    # goal = np.array([1, 1.3, 0, 0])   # parallel parking situation by default
-    goal = np.array([3,2,0.1,0])        # customed test
+    goal = np.array([1, 1.3, 0, 0])
     xy_low = [0, 0]
     xy_high = [5, 5]
     phi_max = 0.6

@@ -278,9 +278,9 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         RRT implementation passes in the goal as an additional argument,
         which can be used to implement a goal-biasing heuristic.
         """
-        
+        print(args[0])
         p = np.random.rand()
-        if p>0.6:
+        if p>0.5:
             sample_point=args[0]
         else:
             p_sample=np.random.rand(4,1)
@@ -325,17 +325,31 @@ class BicycleConfigurationSpace(ConfigurationSpace):
 
     def local_plan(self, c1, c2, dt=0.01):
         v = c2 - c1
-        dist = np.linalg.norm(c1 - c2)
+        dist = self.distance(c1 , c2)
         total_time = 0.2
-        vel = dist / total_time
-        times = np.arange(0, total_time, dt)
-
-        positions = np.zeros([len(times),4])
-        for i in range(len(times)):
-            positions[i] = (1 - (i / len(times))) * c1 + (i / len(times)) * c2
+        # vel = dist/total_time
+        vel = 1
+        
+        orient=v/dist
+        p = lambda t:  c1 + (t / total_time) * orient 
+        times = np.arange(0, total_time, self.dt)
+        positions = p(times[:, None])
         velocities = np.tile(np.array([vel,0]), (positions.shape[0], 1))
-        plan = Plan(times, positions, velocities, dt=dt)
+        plan = Plan(times, positions, velocities, dt=self.dt)
         return plan
+
+        # v = c2 - c1
+        # dist = np.linalg.norm(c1 - c2)
+        # total_time = 0.2
+        # vel = dist / total_time
+        # times = np.arange(0, total_time, dt)
+
+        # positions = np.zeros([len(times),4])
+        # for i in range(len(times)):
+        #     positions[i] = (1 - (i / len(times))) * c1 + (i / len(times)) * c2
+        # velocities = np.tile(np.array([vel,0]), (positions.shape[0], 1))
+        # plan = Plan(times, positions, velocities, dt=dt)
+        # return plan
         """
         Constructs a local plan from c1 to c2. Usually, you want to
         just come up with any plan without worrying about obstacles,

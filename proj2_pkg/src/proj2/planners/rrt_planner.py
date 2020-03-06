@@ -124,14 +124,14 @@ def main():
     to get rid of the rospy.is_shutdown check in the main 
     planner loop (and the corresponding rospy import).
     """
-    start = np.array([1, 1, 0, 0]) 
+    start = np.array([2, 1, 0, 0]) 
     goal = np.array([9, 9, 0, 0])
     xy_low = [0, 0]
     xy_high = [10, 10]
     phi_max = 0.6
     u1_max = 2
     u2_max = 3
-    obstacles = [[6, 3.5, 1.5], [3.5, 6.5, 1]]
+    obstacles = [[6, 3.5, 1.5], [3.5, 6.5, 1],[7,7,0.6]]
 
     config = BicycleConfigurationSpace( xy_low + [-1000, -phi_max],
                                         xy_high + [1000, phi_max],

@@ -16,8 +16,8 @@ import rospy
 # import matlab.engine
 
 from proj2_pkg.msg import BicycleCommandMsg, BicycleStateMsg
-from proj2.planners import BicycleConfigurationSpace, RRTPlanner 
-#,OptimizationPlanner, SinusoidPlanner
+from proj2.planners import BicycleConfigurationSpace, RRTPlanner , SinusoidPlanner
+#,OptimizationPlanner,
 from proj2.controller import BicycleModelController
 
 def parse_args():
