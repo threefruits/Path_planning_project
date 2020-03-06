@@ -1,0 +1,33 @@
+=============
+Q4
+a) because the system is nonlinear, we cannot use a linear optimizer for a nonlinear system. For example, we want to minimize (x,y) for each step, if we use the linear optimizer. The cost of (1,1) and (-1,-1) is not equivalent.
+
+=============
+Q5
+-----------------------
+a) 
+In TrajOpt and CHOMP, their optimization is about a manipulator or a human-liked robot, with 7+ DOF. 
+The first reason is the computational complexity, our planner is only 2 DOF(ignore rotation because our robot is round) but the planner in the paper is 7+ DOF, so we have to using a different planner.
+The second reason is the planner in paper having more constraints (like the joint constraints etc. ). To dealing these constraints, we have to modify our original trajectories to more smooth trajectories, considering jerks and so on.
+
+In TrajOpt, we measured the distance to obstacle by using signed distance, and also using swept-volume cost to modify the collision cost function.
+
+In CHOMP, we add obstacle distance cost to the cost function directly. 
+-----------------------
+b)
+In TrajOpt, the path is parameterized by a TxK-dimensional matrix, where T is the number of discrete time-steps and K is the number of DOF.
+
+In CHOMP, using a path as smooth function mapping time to robot configurations.
+-----------------------
+c) 
+In TrajOpt, using linear interpolation or cubic splines to describe the trajectory between discrete posture. And then calculate the cost function between stationary obstacle and simulated continuous-time trajectory.
+
+In CHOMP, using discrete approximation of the obstacle term, for each iteration , calculate collision cost and its gradiant. Then it's straightforward to compute the vector in the configuration space which pushes robot out of collision for every iteration.
+-----------------------
+d)
+In TrajOpt, using sequential convex optimization, whcih can be solved easily.
+
+In CHOMP, using Hamiltonnian Monte Carlo to the distribuation of paths, and making it probabilistically complete.
+
+
+-----------------------
