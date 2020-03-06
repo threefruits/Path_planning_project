@@ -83,13 +83,13 @@ class SinusoidPlanner():
                             delta_t=delta_t
                         )
         alpha_path =    self.steer_alpha(
-                            phi_path.end_position(), 
+                            phi_path.end_position(),
                             goal_state, 
                             dt=dt, 
                             delta_t=delta_t
                         )
         y_path =        self.steer_y(
-                            alpha_path.end_position(), 
+                            alpha_path.end_position(),
                             goal_state,
                             dt=dt,
                             delta_t=delta_t
@@ -173,7 +173,31 @@ class SinusoidPlanner():
         :obj: Plan
             See configuration_space.Plan.
         """
-        pass
+        # pass
+        # added by Jonathan Tong
+        start_state_v = self.state2v(start_state)
+        goal_state_v = self.state2v(goal_state)
+        delta_phi = goal_state_v[3] - start_state_v[3]
+        delta_alpha = goal_state_v[2] - start_state_v[2]
+
+        omega = 2*np.pi / delta_t
+
+        a2 = min(1, self.phi_dist*omega)
+        f = lambda phi: (1/self.l)*np.tan(phi) # This is from the car model
+        phi_fn = lambda t: (a2/omega)*np.sin(omega*t) + start_state_v[1]
+        integrand = lambda t: f(phi_fn(t))*np.sin(omega*t) # The integrand to find beta
+        beta1 = (omega/np.pi) * quad(integrand, 0, delta_t)[0]
+
+        a1 = (delta_alpha * omega)/(np.pi*beta1)
+              
+        v1 = lambda t: a1*np.sin(omega*(t))
+        v2 = lambda t: a2*np.cos(omega*(t))
+
+        path, t = [], t0
+        while t < t0 + delta_t:
+            path.append([t, v1(t-t0), v2(t-t0)])
+            t = t + dt
+        return self.v_path_to_u_path(path, start_state, dt)
 
     def steer_alpha(self, start_state, goal_state, t0 = 0, dt = 0.01, delta_t = 2):
         """
@@ -249,7 +273,20 @@ class SinusoidPlanner():
         :obj: Plan
             See configuration_space.Plan.
         """
-        pass
+        # pass
+        # added by Jonathan Tong
+        start_state_v = self.state2v(start_state)
+        goal_state_v = self.state2v(goal_state)
+        delta_y = goal_state_v[1] - start_state_v[1]
+
+        v1 = 0
+        v2 = delta_y / delta_t
+
+        path, t = [], t0
+        while t < t0 + delta_t:
+            path.append([t, v1, v2])
+            t = t + dt
+        return self.v_path_to_u_path(path, start_state, dt)
 
     def state2v(self, state):
         """
@@ -316,7 +353,8 @@ def main():
     """Use this function if you'd like to test without ROS.
     """
     start = np.array([1, 1, 0, 0]) 
-    goal = np.array([1, 1.3, 0, 0])
+    # goal = np.array([1, 1.3, 0, 0])   # parallel parking situation by default
+    goal = np.array([3,2,0.1,0])        # customed test
     xy_low = [0, 0]
     xy_high = [5, 5]
     phi_max = 0.6
