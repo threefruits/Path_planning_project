@@ -266,7 +266,7 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         c1 and c2 should be numpy.ndarrays of size (4,)
         """
         theta_d= math.pi - abs((c1[2]-c2[2])%(2*math.pi)-math.pi)
-        distance = math.sqrt((c1[0]-c2[0])*(c1[0]-c2[0])+(c1[1]-c2[1])*(c1[1]-c2[1])+theta_d*theta_d)
+        distance = np.sqrt((c1[0]-c2[0])*(c1[0]-c2[0])+(c1[1]-c2[1])*(c1[1]-c2[1])+theta_d*theta_d)
         return distance
 
     def sample_config(self, *args):
@@ -298,7 +298,7 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         """
         is_collision=False
         for obs in self.obstacles:
-            distance = sqrt((obs[0]-c[0])^2+(obs[1]-c[1])^2)
+            distance = np.sqrt((obs[0]-c[0])**2+(obs[1]-c[1])**2)
             if distance< (self.robot_radius+obs[2]):
                 is_collision=True
         return is_collision
