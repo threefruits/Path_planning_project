@@ -39,6 +39,12 @@ class Plan(object):
     def __len__(self):
         return len(self.times)
 
+    def time_index(self):
+        return self.times
+    
+    def position_index():
+        return self.positions
+
     def get(self, t):
         """Returns the desired position and open loop input at time t.
         """
@@ -247,7 +253,7 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         We assume that the robot is circular and has radius equal to robot_radius
         The state of the robot is defined as (x, y, theta, phi).
     """
-    def __init__(self, low_lims, high_lims, input_low_lims, input_high_lims, obstacles, goal, robot_radius):
+    def __init__(self, low_lims, high_lims, input_low_lims, input_high_lims, obstacles, robot_radius):
         dim = 4
         super(BicycleConfigurationSpace, self).__init__(dim, low_lims, high_lims, obstacles)
         self.robot_radius = robot_radius
@@ -260,7 +266,7 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         c1 and c2 should be numpy.ndarrays of size (4,)
         """
         theta_d= math.pi - abs((c1[2]-c2[2])%(2*math.pi)-math.pi)
-        distance = math.sqrt((c1[0]-c2[0])^2+(c1[1]-c2[1])^2+theta_d^2)
+        distance = math.sqrt((c1[0]-c2[0])*(c1[0]-c2[0])+(c1[1]-c2[1])*(c1[1]-c2[1])+theta_d*theta_d)
         return distance
 
     def sample_config(self, *args):
@@ -272,17 +278,30 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         RRT implementation passes in the goal as an additional argument,
         which can be used to implement a goal-biasing heuristic.
         """
+        
         p = np.random.rand()
-        if p>0.8
-
-        pass
+        if p>0.6:
+            sample_point=args[0]
+        else:
+            p_sample=np.random.rand(4,1)
+            sample_x=self.low_lims[0]+(self.high_lims[0]-self.low_lims[0])*p_sample[0]
+            sample_y=self.low_lims[1]+(self.high_lims[1]-self.low_lims[1])*p_sample[1]
+            sample_theta=self.low_lims[2]+(self.high_lims[2]-self.low_lims[2])*p_sample[2]
+            sample_phi=self.low_lims[3]+(self.high_lims[3]-self.low_lims[3])*p_sample[3]
+            sample_point=np.array([sample_x,sample_y,sample_theta,sample_phi])
+        return sample_point
 
     def check_collision(self, c):
         """
         Returns true if a configuration c is in collision
         c should be a numpy.ndarray of size (4,)
         """
-       pass
+        is_collision=False
+        for obs in self.obstacles:
+            distance = sqrt((obs[0]-c[0])^2+(obs[1]-c[1])^2)
+            if distance< (self.robot_radius+obs[2]):
+                is_collision=True
+        return is_collision
 
     def check_path_collision(self, path):
         """
@@ -293,9 +312,30 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         You should also ensure that the path does not exceed any state bounds,
         and the open loop inputs don't exceed input bounds.
         """
-        pass
+        is_collision=False
+        time_steps=path.time_index()
+        for t in time_steps:
+            pos_,input_=path.get(t)
+            is_co=self.check_collision(pos_)
+            is_state_bound=((self.low_lims[0]<pos_[0]<self.high_lims[0]) and (self.low_lims[1]<pos_[1]<self.high_lims[1])) 
+            is_input_bound=((self.input_low_lims[0]<input_[0]<self.input_high_lims[0]) and (self.input_low_lims[1]<input_[1]<self.input_high_lims[1]))
+            if ( (not is_state_bound) or (not is_input_bound) or is_co):
+                is_collision=True
+        return is_collision
 
     def local_plan(self, c1, c2, dt=0.01):
+        v = c2 - c1
+        dist = np.linalg.norm(c1 - c2)
+        total_time = 0.2
+        vel = dist / total_time
+        times = np.arange(0, total_time, dt)
+
+        positions = np.zeros([len(times),4])
+        for i in range(len(times)):
+            positions[i] = (1 - (i / len(times))) * c1 + (i / len(times)) * c2
+        velocities = np.tile(np.array([vel,0]), (positions.shape[0], 1))
+        plan = Plan(times, positions, velocities, dt=dt)
+        return plan
         """
         Constructs a local plan from c1 to c2. Usually, you want to
         just come up with any plan without worrying about obstacles,
@@ -329,4 +369,4 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         be good to use for a bicycle model robot. What kinds of motions are at
         our disposal?
         """
-        pass
+        

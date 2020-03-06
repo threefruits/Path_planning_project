@@ -11,11 +11,13 @@ import argparse
 from std_srvs.srv import Empty as EmptySrv
 import rospy
 
+
 # import matlab
 # import matlab.engine
 
 from proj2_pkg.msg import BicycleCommandMsg, BicycleStateMsg
-from proj2.planners import SinusoidPlanner, RRTPlanner, OptimizationPlanner, BicycleConfigurationSpace
+from proj2.planners import BicycleConfigurationSpace, RRTPlanner 
+#,OptimizationPlanner, SinusoidPlanner
 from proj2.controller import BicycleModelController
 
 def parse_args():
@@ -82,7 +84,6 @@ if __name__ == '__main__':
                                         [-u1_max, -u2_max],
                                         [u1_max, u2_max],
                                         obstacles,
-                                        goal,
                                         0.15)
 
     if args.planner == 'sin':

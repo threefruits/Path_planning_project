@@ -63,9 +63,12 @@ class RRTPlanner(object):
                 print "Stopping path planner."
                 break
             rand_config = self.config_space.sample_config(goal)
+            rand_config=rand_config.reshape(1,4)[0]
+            # print(rand_config)
             if self.config_space.check_collision(rand_config):
                 continue
             closest_config = self.config_space.nearest_config_to(self.graph.nodes, rand_config)
+            # print(closest_config,rand_config)
             path = self.config_space.local_plan(closest_config, rand_config)
             if self.config_space.check_path_collision(path):
                 continue
@@ -73,6 +76,7 @@ class RRTPlanner(object):
             new_config = delta_path.end_position()
             self.graph.add_node(new_config, closest_config, delta_path)
             if self.config_space.distance(new_config, goal) <= self.expand_dist:
+                
                 path_to_goal = self.config_space.local_plan(new_config, goal)
                 if self.config_space.check_path_collision(path_to_goal):
                     continue
