@@ -17,7 +17,7 @@ from configuration_space import BicycleConfigurationSpace, Plan, expanded_obstac
 # Put the path to your matlab fodler here
 # e.g. matlab_path = '/home/cc/ee106b/sp20/staff/ee106b-taa/ros_workspaces/proj2/src/proj2_pkg/src/proj2/planners/matlab'
 
-matlab_path = None
+matlab_path = '/home/cc/ee106b/sp20/class/ee106b-abu/proj2/src/proj2_pkg/src/proj2/planners/matlab'
 
 ####################
 

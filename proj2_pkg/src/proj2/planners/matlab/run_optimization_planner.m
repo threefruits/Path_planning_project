@@ -4,7 +4,7 @@ function success = run_optimization_planner()
 %% Put the absolute path to tbx manager here.
 %% eg. tbxmanager_dir = '/home/cc/ee106b/sp20/staff/ee106b-taa/ros_workspaces/proj2/tbxmanager';
 
-tbxmanager_dir = ;
+tbxmanager_dir = '/home/cc/ee106b/sp20/class/ee106b-abu/proj2/src/proj2_pkg/src/proj2/planners/matlab/tbxmanager';
 
 disp('Adding tbxmanager')
 addpath(tbxmanager_dir)

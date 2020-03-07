@@ -12,12 +12,11 @@ from std_srvs.srv import Empty as EmptySrv
 import rospy
 
 
-# import matlab
-# import matlab.engine
+import matlab
+import matlab.engine
 
 from proj2_pkg.msg import BicycleCommandMsg, BicycleStateMsg
-from proj2.planners import BicycleConfigurationSpace, RRTPlanner , SinusoidPlanner
-#,OptimizationPlanner,
+from proj2.planners import BicycleConfigurationSpace, RRTPlanner , SinusoidPlanner, OptimizationPlanner
 from proj2.controller import BicycleModelController
 
 def parse_args():

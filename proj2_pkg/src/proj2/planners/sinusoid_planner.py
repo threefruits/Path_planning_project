@@ -264,6 +264,31 @@ class SinusoidPlanner():
         :obj: Plan
             See configuration_space.Plan.
         """
+        # start_state_v = self.state2v(start_state)
+        # goal_state_v = self.state2v(goal_state)
+        # delta_alpha = goal_state_v[2] - start_state_v[2]
+
+        # omega = 2*np.pi / delta_t
+
+        # a2 = min(1, self.phi_dist*omega)
+        # f = lambda phi: (1/self.l)*np.tan(phi) # This is from the car model
+        # g = lambda alpha: alpha/np.sqrt(1-alpha**2)
+        # phi_fn = lambda t: (a2/omega)*np.sin(omega*t) + start_state_v[1]
+        # integrand = lambda t: f(phi_fn(t))*np.sin(omega*t) # The integrand to find beta
+        
+        # alpha_t = lambda t: a1*quad(integrand, 0, t)[0] + start_state_v[2]
+        # integrand2= lambda t: g(alpha_t(t))*np.sin(omega*t)
+        # beta1 = omega/np.pi * quad(integrand2, 0, delta_t)[0]
+        # a1 = (delta_alpha*omega)/(np.pi*beta1)
+
+        # v1 = lambda t: a1*np.sin(omega*(t))
+        # v2 = lambda t: a2*np.cos(omega*(t))
+
+        # path, t = [], t0
+        # while t < t0 + delta_t:
+        #     path.append([t, v1(t-t0), v2(t-t0)])
+        #     t = t + dt
+        # return self.v_path_to_u_path(path, start_state, dt)
         
         start_state_v = self.state2v(start_state)
         goal_state_v = self.state2v(goal_state)
@@ -289,7 +314,8 @@ class SinusoidPlanner():
                     return inf_result
                 u1 = a1 * sin(omega * t) / cos(theta)
                 u2 = a2 * cos(2 * omega * t) 
-                flag = self.check_limit(u1,u2,phi)
+                flag = True
+                # flag = self.check_limit(u1,u2,phi)
                 result = [np.cos(theta)*u1, np.sin(theta)*u1, 1/self.l*tan(phi)*u1, u2]
                 return result if flag else inf_result
             z0 = self.state2u(start_state)
@@ -302,7 +328,7 @@ class SinusoidPlanner():
             # try to find the root of equation func = 0
             init_guess = np.array([delta_y*2, delta_y*2])
             while not rospy.is_shutdown():
-                sol = optimize.root(func1,init_guess,method='hybr')
+                sol = optimize.root(func1,init_guess,method='lm')
                 if (sol.success):
                     break
                 else:
