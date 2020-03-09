@@ -314,8 +314,8 @@ class SinusoidPlanner():
                     return inf_result
                 u1 = a1 * sin(omega * t) / cos(theta)
                 u2 = a2 * cos(2 * omega * t) 
-                flag = True
-                # flag = self.check_limit(u1,u2,phi)
+                # flag = True
+                flag = self.check_limit(u1,u2,phi)
                 result = [np.cos(theta)*u1, np.sin(theta)*u1, 1/self.l*tan(phi)*u1, u2]
                 return result if flag else inf_result
             z0 = self.state2u(start_state)

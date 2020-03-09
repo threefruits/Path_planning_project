@@ -7,7 +7,7 @@ Author: Amay Saxena
 import numpy as np
 import sys
 import math
-
+import matplotlib.pyplot as plt
 import tf2_ros
 import tf
 from std_srvs.srv import Empty as EmptySrv
@@ -39,6 +39,7 @@ class BicycleModelController(object):
             return
         rate = rospy.Rate(int(1 / plan.dt))
         start_t = rospy.Time.now()
+        desired_state_x, desired_state_y, real_state_x, real_state_y = [],[],[],[]
         while not rospy.is_shutdown():
             t = (rospy.Time.now() - start_t).to_sec()
             if t > plan.times[-1]:
@@ -47,6 +48,13 @@ class BicycleModelController(object):
             next_state,next_cmd = plan.get(t+0.01)
             self.step_control(state,next_state , cmd)
             rate.sleep()
+            desired_state_x.append(state[0])
+            desired_state_y.append(state[1])
+            real_state_x.append(self.state[0])
+            real_state_y.append(self.state[1])
+        plt.plot(desired_state_x, desired_state_y)
+        plt.plot(real_state_x, real_state_y)
+        plt.show()
         self.cmd([0, 0])
     def distance(self, c1, c2):
         """

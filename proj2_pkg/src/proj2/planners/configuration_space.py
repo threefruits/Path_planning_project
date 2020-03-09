@@ -11,7 +11,7 @@ from scipy.integrate import odeint
 from contextlib import contextmanager
 
 ACTIONS=[math.pi/200,0,-math.pi/200]
-ACTIONS2=[[0.5,0.5],[0.5,0.3] ,[0.7,0] ,[0.5,-0.3] , [0.5,-0.5]]
+ACTIONS2=[[0.5,0.5] ,[0.5,0.3] ,[0.7,0] ,[0.5,-0.3] , [0.5,-0.5]]
 
 class Plan(object):
     """Data structure to represent a motion plan. Stores plans in the form of
@@ -342,19 +342,20 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         return np.array([self.distance(goal,p[0])+0.003*abs(p[0][3]) for p in possible_steer])
         # return np.array([np.linalg.norm((goal-p[0])[:2])+0.001*abs(p[0][3]) for p in possible_steer])
     def local_plan(self, c1, c2, dt=0.01):
+        numbers=50
         start_p=c1
-        positions=np.zeros([50,4])
-        actions=np.zeros([50,2])
+        positions=np.zeros([numbers,4])
+        actions=np.zeros([numbers,2])
         next_p=start_p
         next_a=[1,0]
-        for i in range(50):
+        for i in range(numbers):
             positions[i]=next_p
             actions[i]=next_a
             possible_steer = [self.steer_next(next_p,a) for a in ACTIONS2]
             next_p,next_a= possible_steer[np.argmin(self.cost(possible_steer,c2))]
-        print(actions)
+        #print(actions)
         # print(positions)
-        times = np.arange(0, 0.5, dt)
+        times = np.arange(0, numbers*dt, dt)
 
         
         plan = Plan(times, positions, actions, dt=dt)

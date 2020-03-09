@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
     if args.planner == 'sin':
         planner = SinusoidPlanner(config)
-        plan = planner.plan_to_pose(controller.state, goal, 0.01, 2.0)
+        plan = planner.plan_to_pose(controller.state, goal, 0.01, 2)
 
     elif args.planner == 'rrt':
         planner = RRTPlanner(config, max_iter=10000, expand_dist=0.8)
