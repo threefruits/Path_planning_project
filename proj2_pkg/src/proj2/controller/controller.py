@@ -6,6 +6,7 @@ Author: Amay Saxena
 """
 import numpy as np
 import sys
+import math
 
 import tf2_ros
 import tf
@@ -13,6 +14,8 @@ from std_srvs.srv import Empty as EmptySrv
 import rospy
 from proj2_pkg.msg import BicycleCommandMsg, BicycleStateMsg
 from proj2.planners import SinusoidPlanner, RRTPlanner, BicycleConfigurationSpace
+# tune_set=[[0.15,0],[-0.15,0],[0,0.1],[0,-0.1]]
+tune_set=[[0.15,0],[-0.15,0],[0,0.15],[0,-0.15],[0.1,0.1],[0.1,-0.1],[-0.1,0.1],[-0.1,-0.1],[0,0]]
 
 class BicycleModelController(object):
     def __init__(self):
@@ -41,11 +44,29 @@ class BicycleModelController(object):
             if t > plan.times[-1]:
                 break
             state, cmd = plan.get(t)
-            self.step_control(state, cmd)
+            next_state,next_cmd = plan.get(t+0.01)
+            self.step_control(state,next_state , cmd)
             rate.sleep()
         self.cmd([0, 0])
+    def distance(self, c1, c2):
+        """
+        c1 and c2 should be numpy.ndarrays of size (4,)
+        """
+        theta_d= math.pi - abs((c1[2]-c2[2])%(2*math.pi)-math.pi)
+        distance = np.sqrt((c1[0]-c2[0])*(c1[0]-c2[0])+(c1[1]-c2[1])*(c1[1]-c2[1])+0.15*theta_d*theta_d)
+        return distance
 
-    def step_control(self, target_position, open_loop_input):
+    def dynamic_model(self,p1,action):
+        next_p3= p1[3]+0.01*action[1]
+        next_p2= p1[2]+0.01*3.33*np.tan(next_p3)*action[0]
+        next_p=np.array([p1[0]+ 0.01*action[0]*np.cos(next_p2), p1[1]+ 0.01*action[0]*np.sin(next_p2),next_p2 ,next_p3])
+        return next_p,action
+    
+    def cost(self, possible_tune, goal):
+        return np.array([self.distance(goal,p[0]) for p in possible_tune])
+        
+    
+    def step_control(self, target_position, next_target_position, open_loop_input):
         """Specify a control law. For the grad/EC portion, you may want
         to edit this part to write your own closed loop controller.
         Note that this class constantly subscribes to the state of the robot,
@@ -62,8 +83,14 @@ class BicycleModelController(object):
         Returns:
             None. It simply sends the computed command to the robot.
         """
-        self.cmd(open_loop_input)
+        
+        pre_close_loop_input=(np.zeros([1,2]))[0]
+        pre_close_loop_input[0] = open_loop_input[0]  #- np.linalg.norm((target_position-self.state)[:2])
+        pre_close_loop_input[1] =   open_loop_input[1] + 0.6*(target_position-self.state)[2]
+        possible_tune = [self.dynamic_model(self.state,np.array([pre_close_loop_input[0]+tune[0],pre_close_loop_input[1]+tune[1]])) for tune in tune_set]
+        next_p,close_loop_input= possible_tune[np.argmin(self.cost(possible_tune,next_target_position))]
 
+        self.cmd(close_loop_input)
 
     def cmd(self, msg):
         """
