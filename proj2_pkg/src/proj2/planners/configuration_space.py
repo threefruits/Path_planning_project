@@ -10,6 +10,9 @@ import math
 from scipy.integrate import odeint
 from contextlib import contextmanager
 
+ACTIONS=[math.pi/200,0,-math.pi/200]
+ACTIONS2=[[0.5,0.5],[0.5,0.3] ,[0.7,0] ,[0.5,-0.3] , [0.5,-0.5]]
+
 class Plan(object):
     """Data structure to represent a motion plan. Stores plans in the form of
     three arrays of the same length: times, positions, and open_loop_inputs.
@@ -266,7 +269,7 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         c1 and c2 should be numpy.ndarrays of size (4,)
         """
         theta_d= math.pi - abs((c1[2]-c2[2])%(2*math.pi)-math.pi)
-        distance = np.sqrt((c1[0]-c2[0])*(c1[0]-c2[0])+(c1[1]-c2[1])*(c1[1]-c2[1])+theta_d*theta_d)
+        distance = np.sqrt((c1[0]-c2[0])*(c1[0]-c2[0])+(c1[1]-c2[1])*(c1[1]-c2[1])+0.15*theta_d*theta_d)
         return distance
 
     def sample_config(self, *args):
@@ -280,7 +283,7 @@ class BicycleConfigurationSpace(ConfigurationSpace):
         """
         print(args[0])
         p = np.random.rand()
-        if p>0.5:
+        if p>0.6:
             sample_point=args[0]
         else:
             p_sample=np.random.rand(4,1)
@@ -319,37 +322,77 @@ class BicycleConfigurationSpace(ConfigurationSpace):
             is_co=self.check_collision(pos_)
             is_state_bound=((self.low_lims[0]<pos_[0]<self.high_lims[0]) and (self.low_lims[1]<pos_[1]<self.high_lims[1])) 
             is_input_bound=((self.input_low_lims[0]<input_[0]<self.input_high_lims[0]) and (self.input_low_lims[1]<input_[1]<self.input_high_lims[1]))
+            # print(is_input_bound)
             if ( (not is_state_bound) or (not is_input_bound) or is_co):
                 is_collision=True
         return is_collision
+    
 
-    def local_plan(self, c1, c2, dt=0.01):
-        v = c2 - c1
-        dist = self.distance(c1 , c2)
-        total_time = 0.2
-        # vel = dist/total_time
-        vel = 1
+    def steer_next(self,p1,action):
+
         
-        orient=v/dist
-        p = lambda t:  c1 + (t / total_time) * orient 
-        times = np.arange(0, total_time, self.dt)
-        positions = p(times[:, None])
-        velocities = np.tile(np.array([vel,0]), (positions.shape[0], 1))
-        plan = Plan(times, positions, velocities, dt=self.dt)
+        next_p3= p1[3]+0.01*action[1]
+        next_p2= p1[2]+0.01*3.33*np.tan(next_p3)*action[0]
+        # next_p2= 3.33*np.tan(next_p3)
+        next_p=np.array([p1[0]+ 0.01*action[0]*np.cos(next_p2), p1[1]+ 0.01*action[0]*np.sin(next_p2),next_p2 ,next_p3])
+        
+        return next_p,action
+    
+    def cost(self, possible_steer, goal):
+        return np.array([self.distance(goal,p[0])+0.003*abs(p[0][3]) for p in possible_steer])
+        # return np.array([np.linalg.norm((goal-p[0])[:2])+0.001*abs(p[0][3]) for p in possible_steer])
+    def local_plan(self, c1, c2, dt=0.01):
+        start_p=c1
+        positions=np.zeros([50,4])
+        actions=np.zeros([50,2])
+        next_p=start_p
+        next_a=[1,0]
+        for i in range(50):
+            positions[i]=next_p
+            actions[i]=next_a
+            possible_steer = [self.steer_next(next_p,a) for a in ACTIONS2]
+            next_p,next_a= possible_steer[np.argmin(self.cost(possible_steer,c2))]
+        print(actions)
+        # print(positions)
+        times = np.arange(0, 0.5, dt)
+
+        
+        plan = Plan(times, positions, actions, dt=dt)
         return plan
 
-        # v = c2 - c1
-        # dist = np.linalg.norm(c1 - c2)
-        # total_time = 0.2
-        # vel = dist / total_time
-        # times = np.arange(0, total_time, dt)
+    # def steer_next(self,p1,action):
+    #     next_p = np.array([p1[0]+ 0.01*np.cos(p1[2]+action), p1[1]+ 0.01*np.sin(p1[2]+action),p1[2]+action,0])
+    #     return next_p
 
-        # positions = np.zeros([len(times),4])
-        # for i in range(len(times)):
-        #     positions[i] = (1 - (i / len(times))) * c1 + (i / len(times)) * c2
-        # velocities = np.tile(np.array([vel,0]), (positions.shape[0], 1))
-        # plan = Plan(times, positions, velocities, dt=dt)
-        # return plan
+    # def cost(self, possible_steer, goal):
+    #     return np.array([np.linalg.norm((goal-p)) for p in possible_steer])
+
+    # def local_plan(self, c1, c2, dt=0.01):
+    #     start_p=c1
+    #     positions=np.zeros([50,4])
+    #     next_p=start_p
+    #     for i in range(50):
+    #         positions[i]=next_p
+    #         possible_steer = [self.steer_next(next_p,a) for a in ACTIONS]
+    #         next_p = possible_steer[np.argmin(self.cost(possible_steer,c2))]
+            
+    #     # print(positions)
+    #     times = np.arange(0, 0.5, dt)
+        
+    #     vel = [np.linalg.norm((positions[i+1]-positions[i])[:2])/0.01 for i in range(49)]
+    #     vel =vel +[vel[48]]
+    #     vel = (np.array(vel)).reshape([50,1])
+
+    #     theta_d=[(positions[i+1][2]-positions[i][2])/0.01 for i in range(49)]+[positions[49][2]-positions[48][2]]
+    #     w=[(np.arctanh(0.3*theta_d[i+1])-np.arctanh(0.3*theta_d[i+1]))/0.01 for i in range(49) ]
+    #     w = (np.array( w + [w[48]])).transpose()
+    #     w = (np.array(w)).reshape([50,1])
+    #     print(theta_d)
+    #     input_=np.append(vel,w,axis=1)
+        
+    #     plan = Plan(times, positions, input_, dt=dt)
+    #     return plan
+        
         """
         Constructs a local plan from c1 to c2. Usually, you want to
         just come up with any plan without worrying about obstacles,
