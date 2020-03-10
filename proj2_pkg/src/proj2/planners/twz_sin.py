@@ -72,15 +72,15 @@ class SinusoidPlanner():
             abs(phi_g + self.max_phi)
         )
 
-        x_path =        self.steer_x(
+        
+        y_path =        self.steer_y(
                             start_state, 
-                            goal_state, 
-                            dt=dt, 
+                            goal_state,
+                            dt=dt,
                             delta_t=delta_t
-                        )
-
+                        )    
         phi_path =      self.steer_phi(
-                            x_path.end_position(), 
+                            y_path.end_position(), 
                             goal_state,  
                             dt=dt, 
                             delta_t=delta_t
@@ -91,14 +91,14 @@ class SinusoidPlanner():
                             dt=dt, 
                             delta_t=delta_t
                         )
-        y_path =        self.steer_y(
+        x_path =        self.steer_x(
                             alpha_path.end_position(), 
-                            goal_state,
-                            dt=dt,
+                            goal_state, 
+                            dt=dt, 
                             delta_t=delta_t
-                        )     
+                        )
 
-        self.plan = Plan.chain_paths(x_path, phi_path, alpha_path, y_path)
+        self.plan = Plan.chain_paths(y_path, phi_path, alpha_path, x_path)
         return self.plan
 
     def plot_execution(self):
@@ -114,72 +114,29 @@ class SinusoidPlanner():
         if self.plan:
             plan_x = self.plan.positions[:, 0]
             plan_y = self.plan.positions[:, 1]
-            ax.plot(plan_x, plan_y, color='green')
             ax.set(xlim=(0,5), ylim=(0,5))
+            ax.plot(plan_x, plan_y, color='green')
             # print('Plan_State:{} \nReal_State:{}'.format(goal,self.plan.positions[-1]))
         plt.show()
-        plt.plot(np.linspace(1,2,int(np.shape(self.plan.positions)[0])), self.plan.positions[:,2])
+        plt.plot(np.linspace(1,2,int(np.shape(self.plan.positions)[0])), self.plan.positions[:,2]-np.pi/2)
         plt.plot(np.linspace(1,2,int(np.shape(self.plan.positions)[0])), self.plan.positions[:,3])
         plt.legend('tp')
         plt.show()
-
-    def steer_x(self, start_state, goal_state, t0 = 0, dt = 0.01, delta_t = 2):
-        """
-        Create a Plan to move the turtlebot in the x direction
-
-        Parameters
-        ----------
-        start_state : numpy.ndarray of shape (4,) [x, y, theta, phi]
-            current state of the turtlebot
-        start_state : numpy.ndarray of shape (4,) [x, y, theta, phi]
-            desired state of the turtlebot
-        t0 : float
-            what timestep this trajectory starts at
-        dt : float
-            how many seconds between each trajectory point
-        delta_t : float
-            how many seconds the trajectory should run for
-
-        Returns
-        -------
-        :obj: Plan
-            See configuration_space.Plan.
-        """
+        
+    def steer_y(self, start_state, goal_state, t0=0, dt=0.01, delta_t=2):
         start_state_v = self.state2v(start_state)
         goal_state_v = self.state2v(goal_state)
-        delta_x = goal_state_v[0] - start_state_v[0]
-
-        v1 = delta_x/delta_t
+        delta_y = goal_state_v[0] - start_state_v[0]
+        v1 = delta_y / delta_t
         v2 = 0
 
-        path, t = [], t0
+        path, t =[], t0
         while t < t0 + delta_t:
-            path.append([t, v1, v2])
-            t = t + dt
+            path.append([t,v1,v2])
+            t += dt
         return self.v_path_to_u_path(path, start_state, dt)
-
-    def steer_phi(self, start_state, goal_state, t0 = 0, dt = 0.01, delta_t = 2):
-        """
-        Create a trajectory to move the turtlebot in the phi direction
-
-        Parameters
-        ----------
-        start_state : numpy.ndarray of shape (4,) [x, y, theta, phi]
-            current state of the turtlebot
-        goal_state : numpy.ndarray of shape (4,) [x, y, theta, phi]
-            desired state of the turtlebot
-        t0 : float
-            what timestep this trajectory starts at
-        dt : float
-            how many seconds between each trajectory point
-        delta_t : float
-            how many seconds the trajectory should run for
-
-        Returns
-        -------
-        :obj: Plan
-            See configuration_space.Plan.
-        """
+    
+    def steer_phi(self, start_state, goal_state, t0=0, dt=0.01, delta_t=2):
         start_state_v = self.state2v(start_state)
         goal_state_v = self.state2v(goal_state)
         delta_phi = goal_state_v[1] - start_state_v[1]
@@ -192,40 +149,14 @@ class SinusoidPlanner():
             path.append([t, v1, v2])
             t = t + dt
         return self.v_path_to_u_path(path, start_state, dt)
-        
 
-    def steer_alpha(self, start_state, goal_state, t0 = 0, dt = 0.01, delta_t = 2):
-        """
-        Create a trajectory to move the turtlebot in the alpha direction.  
-        Remember dot{alpha} = f(phi(t))*u_1(t) = f(frac{a_2}{omega}*sin(omega*t))*a_1*sin(omega*t)
-        also, f(phi) = frac{1}{l}tan(phi)
-        See the doc for more math details
-
-        Parameters
-        ----------
-        start_state : numpy.ndarray of shape (4,) [x, y, theta, phi]
-            current state of the turtlebot
-        goal_state : numpy.ndarray of shape (4,) [x, y, theta, phi]
-            desired state of the turtlebot
-        t0 : float
-            what timestep this trajectory starts at
-        dt : float
-            how many seconds between each trajectory point
-        delta_t : float
-            how many seconds the trajectory should run for
-
-        Returns
-        -------
-        :obj: Plan
-            See configuration_space.Plan.
-        """
-
+    def steer_alpha(self, start_state, goal_state, t0=0, dt=0.01, delta_t=2):
         start_state_v = self.state2v(start_state)
         goal_state_v = self.state2v(goal_state)
         delta_alpha = goal_state_v[2] - start_state_v[2]
 
         omega = 2*np.pi / delta_t
- 
+
         a2 = min(1, self.phi_dist*omega)
         f = lambda phi: (1/self.l)*np.tan(phi) # This is from the car model
         phi_fn = lambda t: (a2/omega)*np.sin(omega*t) + start_state_v[1]
@@ -243,57 +174,7 @@ class SinusoidPlanner():
             t = t + dt
         return self.v_path_to_u_path(path, start_state, dt)
 
-
-    def steer_y(self, start_state, goal_state, t0 = 0, dt = 0.01, delta_t = 2):
-        """
-        Create a trajectory to move the turtlebot in the y direction. 
-        Remember, dot{y} = g(alpha(t))*v1 = frac{alpha(t)}{sqrt{1-alpha(t)^2}}*a_1*sin(omega*t)
-        See the doc for more math details
-
-        Parameters
-        ----------
-        start_state : numpy.ndarray of shape (4,) [x, y, theta, phi]
-            current state of the turtlebot
-        goal_state : numpy.ndarray of shape (4,) [x, y, theta, phi]
-            desired state of the turtlebot
-        t0 : float
-            what timestep this trajectory starts at
-        dt : float
-            how many seconds between each trajectory point
-        delta_t : float
-            how many seconds the trajectory should run for
-
-        Returns
-        -------
-        :obj: Plan
-            See configuration_space.Plan.
-        """
-        # start_state_v = self.state2v(start_state)
-        # goal_state_v = self.state2v(goal_state)
-        # delta_alpha = goal_state_v[2] - start_state_v[2]
-
-        # omega = 2*np.pi / delta_t
-
-        # a2 = min(1, self.phi_dist*omega)
-        # f = lambda phi: (1/self.l)*np.tan(phi) # This is from the car model
-        # g = lambda alpha: alpha/np.sqrt(1-alpha**2)
-        # phi_fn = lambda t: (a2/omega)*np.sin(omega*t) + start_state_v[1]
-        # integrand = lambda t: f(phi_fn(t))*np.sin(omega*t) # The integrand to find beta
-        
-        # alpha_t = lambda t: a1*quad(integrand, 0, t)[0] + start_state_v[2]
-        # integrand2= lambda t: g(alpha_t(t))*np.sin(omega*t)
-        # beta1 = omega/np.pi * quad(integrand2, 0, delta_t)[0]
-        # a1 = (delta_alpha*omega)/(np.pi*beta1)
-
-        # v1 = lambda t: a1*np.sin(omega*(t))
-        # v2 = lambda t: a2*np.cos(omega*(t))
-
-        # path, t = [], t0
-        # while t < t0 + delta_t:
-        #     path.append([t, v1(t-t0), v2(t-t0)])
-        #     t = t + dt
-        # return self.v_path_to_u_path(path, start_state, dt)
-        
+    def steer_x(self, start_state, goal_state, t0=0, dt=0.01, delta_t=2):
         start_state_v = self.state2v(start_state)
         goal_state_v = self.state2v(goal_state)
         delta_y = goal_state_v[3] - start_state_v[3]
@@ -314,13 +195,13 @@ class SinusoidPlanner():
                 inf_result = [np.inf,np.inf,np.inf,np.inf]
                 if x == np.inf:
                     return inf_result
-                if cos(theta) == 0 :
+                if sin(theta) == 0 :
                     return inf_result
-                u1 = a1 * sin(omega * t) / cos(theta)
+                u1 = a1 * sin(omega * t) / sin(theta)
                 u2 = a2 * cos(2 * omega * t) 
                 flag = True
                 # flag = self.check_limit(u1,u2,phi)
-                result = [np.cos(theta)*u1, np.sin(theta)*u1, 1/self.l*tan(phi)*u1, u2]
+                result = [np.sin(theta)*u1, np.cos(theta)*u1, -1/self.l*tan(phi)*u1, u2]
                 return result if flag else inf_result
             z0 = self.state2u(start_state)
             t = np.array([0,delta_t])
@@ -355,7 +236,7 @@ class SinusoidPlanner():
                 path.append([t, v1(t-t0), v2(t-t0)])
                 t = t + dt
             u_path = self.v_path_to_u_path(path, start_state, dt)
-
+            
             if not self.limit_flag:
                 break
             else:
@@ -364,7 +245,7 @@ class SinusoidPlanner():
                 max_a1 = max_a1 * mul
                 max_a2 = max_a2 * mul
         return u_path
-        
+
     def state2u(self,state):
         return np.array([state[0], state[1], state[2], state[3]])
 
@@ -387,7 +268,7 @@ class SinusoidPlanner():
             x, phi, alpha, y
         """
         x, y, theta, phi = state
-        return np.array([x, phi, np.sin(theta), y])
+        return np.array([y, phi, np.cos(theta), x])
 
     def v_path_to_u_path(self, path, start_state, dt):
         """
@@ -409,7 +290,7 @@ class SinusoidPlanner():
         """
         self.limit_flag = False
         def v2cmd(v1, v2, state):
-            u1 = v1/np.cos(state[2])
+            u1 = v1/np.sin(state[2])
             u2 = v2
             # if abs(u1) > self.max_u1:
             #     print("The limit is reached. u1 %f max %f"%(u1,self.max_u1))
@@ -436,9 +317,9 @@ class SinusoidPlanner():
             x, y, theta, phi = curr_state
             linear_velocity, steering_rate = cmd_u
             curr_state = [
-                x     + np.cos(theta)               * linear_velocity*dt,
-                y     + np.sin(theta)               * linear_velocity*dt,
-                theta + np.tan(phi) / float(self.l) * linear_velocity*dt,
+                x     + np.sin(theta)               * linear_velocity*dt,
+                y     + np.cos(theta)               * linear_velocity*dt,
+                theta - np.tan(phi) / float(self.l) * linear_velocity*dt,
                 phi   + steering_rate*dt
             ]
 
@@ -448,10 +329,9 @@ def main():
     """Use this function if you'd like to test without ROS.
     """
     global goal
-    start = np.array([1, 1, 0, 0]) 
-    # goal = np.array([1, 3, 0.1, 0])
-    goal = np.array([1, 1, 1.5, 0])
-    # goal = np.array([2, 1.3, 0.7, 0])
+    start = np.array([1, 1, np.pi/2, 0]) 
+    goal = np.array([1, 1, 0, 0])
+    # goal = np.array([3,1, np.pi/2, 0])
 
     xy_low = [0, 0]
     xy_high = [5, 5]
