@@ -11,8 +11,8 @@ from scipy.integrate import odeint
 from contextlib import contextmanager
 
 ACTIONS=[math.pi/200,0,-math.pi/200]
+# ACTIONS2=[[0.5,0.5] ,[0.5,0.3] ,[0.7,0] ,[0.5,-0.3] , [0.5,-0.5],[-0.5,0.5] ,[-0.5,0.3] ,[-0.7,0] ,[-0.5,-0.3] , [-0.5,-0.5]]
 ACTIONS2=[[0.5,0.5] ,[0.5,0.3] ,[0.7,0] ,[0.5,-0.3] , [0.5,-0.5]]
-
 class Plan(object):
     """Data structure to represent a motion plan. Stores plans in the form of
     three arrays of the same length: times, positions, and open_loop_inputs.

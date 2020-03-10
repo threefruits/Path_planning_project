@@ -63,7 +63,11 @@ class OptimizationPlanner(object):
         with expanded_obstacles(self.config_space.obstacles, self.config_space.robot_radius + 0.05):
 
             self.plan = None
-
+            # x_goal, y_goal, theta_goal, phi_goal = goal
+            # x_start, y_start, theta_start, phi_start = start
+            # distance = abs(x_goal - x_start) + abs(y_goal - y_start) + abs(theta_goal - theta_start)
+            # N = int(30* distance)
+            # print('N:=',N)
             infodict = {
                 "start": start,
                 "goal": goal,

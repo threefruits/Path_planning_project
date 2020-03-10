@@ -64,7 +64,7 @@ constraints = [bounds, dyn_cons, obs_cons, init_cons, final_cons];
 % about theta than x/y (because the units of theta are smaller), and more
 % about x/y than phi. We also want to minimize velocity over steering rate
 Q = diag([1, 1, 2, 0.1]);
-R = diag([1, 0.5]);
+R = diag([4, 0.5]);
 P = N*Q;
 
 cost = cost_function(P, Q, R, q, u, goal);

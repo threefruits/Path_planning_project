@@ -44,7 +44,7 @@ class RRTPlanner(object):
         self.max_iter = max_iter
         # Exit the algorithm once a node is sampled within this 
         # distance of the goal:
-        self.expand_dist = expand_dist
+        self.expand_dist = 0.8
 
 
     def plan_to_pose(self, start, goal, dt=0.01, prefix_time_length=1):

@@ -51,7 +51,7 @@ class SinusoidPlanner():
         :obj: Plan
             See configuration_space.Plan.
         """
-
+        
         print "======= Planning with OptimizationPlanner ======="
 
         self.plan = None
@@ -314,8 +314,8 @@ class SinusoidPlanner():
                     return inf_result
                 u1 = a1 * sin(omega * t) / cos(theta)
                 u2 = a2 * cos(2 * omega * t) 
-                # flag = True
-                flag = self.check_limit(u1,u2,phi)
+                flag = True
+                # flag = self.check_limit(u1,u2,phi)
                 result = [np.cos(theta)*u1, np.sin(theta)*u1, 1/self.l*tan(phi)*u1, u2]
                 return result if flag else inf_result
             z0 = self.state2u(start_state)
@@ -407,16 +407,16 @@ class SinusoidPlanner():
         def v2cmd(v1, v2, state):
             u1 = v1/np.cos(state[2])
             u2 = v2
-            if abs(u1) > self.max_u1:
-                print("The limit is reached. u1 %f max %f"%(u1,self.max_u1))
-                self.limit_flag = True
-            if abs(u2) > self.max_u2:
-                print("The limit is reached. u2 %f max %f"%(u2,self.max_u2))
-                self.limit_flag = True
-            phi = state[3]
-            if abs(phi) > self.max_phi:
-                print("The limit is reached. phi %f max %f"%(phi,self.max_phi))
-                self.limit_flag = True
+            # if abs(u1) > self.max_u1:
+            #     print("The limit is reached. u1 %f max %f"%(u1,self.max_u1))
+            #     self.limit_flag = True
+            # if abs(u2) > self.max_u2:
+            #     print("The limit is reached. u2 %f max %f"%(u2,self.max_u2))
+            #     self.limit_flag = True
+            # phi = state[3]
+            # if abs(phi) > self.max_phi:
+            #     print("The limit is reached. phi %f max %f"%(phi,self.max_phi))
+            #     self.limit_flag = True
             return [u1, u2]
 
         curr_state = start_state
@@ -428,7 +428,8 @@ class SinusoidPlanner():
             positions.append(curr_state)
             open_loop_inputs.append(cmd_u)
             times.append(t)
-
+            # print(positions)
+            print(cmd_u)
             x, y, theta, phi = curr_state
             linear_velocity, steering_rate = cmd_u
             curr_state = [
@@ -444,7 +445,7 @@ def main():
     """Use this function if you'd like to test without ROS.
     """
     start = np.array([1, 1, 0, 0]) 
-    goal = np.array([1, 1.3, 0, 0])
+    goal = np.array([1, 3, 0.1, 0])
     xy_low = [0, 0]
     xy_high = [5, 5]
     phi_max = 0.6

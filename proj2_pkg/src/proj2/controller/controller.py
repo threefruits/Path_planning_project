@@ -94,11 +94,12 @@ class BicycleModelController(object):
         
         pre_close_loop_input=(np.zeros([1,2]))[0]
         pre_close_loop_input[0] = open_loop_input[0]  #- np.linalg.norm((target_position-self.state)[:2])
-        pre_close_loop_input[1] =   open_loop_input[1] + 0.6*(target_position-self.state)[2]
+        pre_close_loop_input[1] =   open_loop_input[1] + 0.5*(target_position-self.state)[2]
         possible_tune = [self.dynamic_model(self.state,np.array([pre_close_loop_input[0]+tune[0],pre_close_loop_input[1]+tune[1]])) for tune in tune_set]
         next_p,close_loop_input= possible_tune[np.argmin(self.cost(possible_tune,next_target_position))]
 
         self.cmd(close_loop_input)
+        # self.cmd(open_loop_input)
 
     def cmd(self, msg):
         """
