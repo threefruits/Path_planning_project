@@ -1,6 +1,0 @@
-setup.py
-src/proj2/__init__.py
-src/proj2.egg-info/PKG-INFO
-src/proj2.egg-info/SOURCES.txt
-src/proj2.egg-info/dependency_links.txt
-src/proj2.egg-info/top_level.txt
